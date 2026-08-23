@@ -67,7 +67,7 @@ df["Marital_Status"] = df["Marital_Status"].replace("Divorsed", "Divorced")  # F
 
 #Parse date/time columns 
 df["Transaction_Date"] = pd.to_datetime(df["Transaction_Date"], errors="coerce")  # Convert to datetime, coerce errors to NaT
-df["Transaction_Hour"] = pd.to_datetime(df["Transaction_Date"] , format="%H:%M:%S", errors="coerce").dt.hour  # Extract hour from Transaction_Date
+df["Transaction_Hour"] = pd.to_datetime(df["Transaction_Time"], format="%H:%M:%S", errors="coerce").dt.hour
 df["Transaction_DayOfWeek"] = df["Transaction_Date"].dt.dayofweek  # Extract day of week from Transaction_Date
 df["Is_Weekend"] = df["Transaction_DayOfWeek"].isin([5, 6]).astype(int)  # Create binary feature for weekend transactions
 df["Is_Night_Transaction"] = df["Transaction_Hour"].apply(lambda h: 1 if pd.notnull(h) and (h >=23 or h <=5) else 0)  # Create binary feature for night transactions
@@ -81,7 +81,7 @@ df ["Customer_Since"] = pd.to_datetime(df["Customer_Since"], errors="coerce")  #
 df["Customer_Tenure_Days"] = (df["Transaction_Date"] - df["Customer_Since"]).dt.days  # Calculate customer tenure in days
 
 #Amount relative to credit limit
-df["Amount_to_CreditLimit_Ratio"] = df["Transaction_Amount"] / df["Credit_Limit"].replace(0, np.nan).fillna(0)  # Calculate ratio of transaction amount to credit limit
+df["Amount_to_CreditLimit_Ratio"] = (df["Transaction_Amount"] / df["Credit_Limit"].replace(0, np.nan)).fillna(0) # Calculate ratio of transaction amount to credit limit
 
 # Customer spending behaivor (historical average & transaction count)
 cust_stat = df.groupby("Customer_ID")["Transaction_Amount"].agg(Customer_Avg_Amount = "mean", Customer_Txn_Count = "count").reset_index()
@@ -96,3 +96,7 @@ print(df[["Transaction_Hour", "Is_Weekend", "Is_Night_Transaction",
           "Is_Card_Expired", "Customer_Tenure_Days", "Amount_to_CreditLimit_Ratio",
           "Customer_Avg_Amount", "Merchant_Fraud_Rate"]].describe())
 print("\nMarital_Status values:", df["Marital_Status"].unique())
+
+#Save the final dataset for modelling 
+df.to_csv("/home/dennis/Documents/Fraud Detection/featured_data.csv", index=False)
+print("\nSaved -> featured_data.csv")
