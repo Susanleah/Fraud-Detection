@@ -2,10 +2,12 @@
 fraud_Detection.py
 Step 1: Load the 4 raw CSV files and inspect them before doing anything else.
 """
-
+# Load the necessary libraries
 import pandas as pd
+import numpy as np
 
-# Load each raw table
+
+# Load the raw table files
 transactions = pd.read_csv("/home/dennis/Documents/Fraud Detection/Transaction_Data_250k.csv")
 customers = pd.read_csv("/home/dennis/Documents/Fraud Detection/Cusmtomer_data.csv")
 cards = pd.read_csv("/home/dennis/Documents/Fraud Detection/Cards_Data.csv")
@@ -17,7 +19,7 @@ datasets = {
     "Cards": cards,
     "Merchants": merchants,
 }
-
+# Inspect the datasets 
 for name, df in datasets.items():
     print("=" * 60)
     print(f"{name}  ->  shape: {df.shape}")
@@ -29,7 +31,7 @@ for name, df in datasets.items():
     print(df.isnull().sum()[df.isnull().sum() > 0])
     print("\n")
 
-# Step 2: Merge all 4 tables into a single dataset.
+# Step 2 : Merge the 4 tables into a single table for analysis. The final table should have the following column
 
 # Merge transactions -> customers (on Customer_ID)
 df = transactions.merge(
@@ -37,16 +39,32 @@ df = transactions.merge(
     on="Customer_ID", how="left"
 )
 
-# Merge -> Cards (on Card ID)
+# Merge -> cards (on Card_ID) 
 df = df.merge(
-    cards.drop(columns=["Customer_ID"]),
-    on="Card_ID",how="left"
+    cards.drop(columns=["Customer_ID"]),  # already have Customer_ID from transactions
+    on="Card_ID", how="left"
 )
 
-#Merge -> Merchants(on Merchnat ID )
+# Merge -> merchants (on Merchant_ID) 
 df = df.merge(
-    merchants.drop(columns=["Merchant_Name","Merchant_Category", "State","City","Merchant_Risk_Level"]),
+    merchants.drop(columns=["Merchant_Name", "Merchant_Category", "State", "City", "Merchant_Risk_Level"]),
     on="Merchant_ID", how="left"
 )
 
-print("Merged shape:",df.shape)
+print("Merged shape:", df.shape)
+print(df.columns.tolist())
+print("\nMissing values after merge:")
+print(df.isnull().sum()[df.isnull().sum() > 0])
+
+# Save the merged dataset so we don't have to redo this every time
+df.to_csv("/home/dennis/Documents/Fraud Detection/merged_data.csv", index=False)
+print("\nSaved merged dataset -> /home/dennis/Documents/Fraud Detection/merged_data.csv")
+
+# Step 3: Feature Engineering
+
+#Fix data quality issue
+df["Marital_Status"] = df["Marital_Status"].replace("Divorsed", "Divorced")  # Fix typo in Marital_Status
+
+#Parse date/time columns 
+df["Transaction_Date"] = pd.to_datetime(df["Transaction_Date"], errors="coerce")  # Convert to datetime, coerce errors to NaT
+df["Transaction_hour"] = pd.to_datetime(df["Transaction_Date"] , format="%H:%M:%S", errors="coerce").dt.hour  # Extract hour from Transaction_Date
