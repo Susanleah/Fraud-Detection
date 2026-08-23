@@ -31,9 +31,22 @@ for name, df in datasets.items():
 
 # Step 2: Merge all 4 tables into a single dataset.
 
-# --- Merge transactions -> customers (on Customer_ID) ---
+# Merge transactions -> customers (on Customer_ID)
 df = transactions.merge(
     customers.drop(columns=["Customer_Name", "State", "City"]),  # drop duplicates/PII not needed for modeling
     on="Customer_ID", how="left"
 )
 
+# Merge -> Cards (on Card ID)
+df = df.merge(
+    cards.drop(columns=["Customer_ID"]),
+    on="Card_ID",how="left"
+)
+
+#Merge -> Merchants(on Merchnat ID )
+df = df.merge(
+    merchants.drop(columns=["Merchant_Name","Merchant_Category", "State","City","Merchant_Risk_Level"]),
+    on="Merchant_ID", how="left"
+)
+
+print("Merged shape:",df.shape)
