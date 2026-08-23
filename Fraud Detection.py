@@ -67,10 +67,10 @@ df["Marital_Status"] = df["Marital_Status"].replace("Divorsed", "Divorced")  # F
 
 #Parse date/time columns 
 df["Transaction_Date"] = pd.to_datetime(df["Transaction_Date"], errors="coerce")  # Convert to datetime, coerce errors to NaT
-df["Transaction_hour"] = pd.to_datetime(df["Transaction_Date"] , format="%H:%M:%S", errors="coerce").dt.hour  # Extract hour from Transaction_Date
+df["Transaction_Hour"] = pd.to_datetime(df["Transaction_Date"] , format="%H:%M:%S", errors="coerce").dt.hour  # Extract hour from Transaction_Date
 df["Transaction_DayOfWeek"] = df["Transaction_Date"].dt.dayofweek  # Extract day of week from Transaction_Date
 df["Is_Weekend"] = df["Transaction_DayOfWeek"].isin([5, 6]).astype(int)  # Create binary feature for weekend transactions
-df["Is_Night_Transaction"] = df["Transaction_hour"].apply(lambda h: 1 if pd.notnull(h) and (h >=23 or h <=5) else 0)  # Create binary feature for night transactions
+df["Is_Night_Transaction"] = df["Transaction_Hour"].apply(lambda h: 1 if pd.notnull(h) and (h >=23 or h <=5) else 0)  # Create binary feature for night transactions
 
 #Card expiry check 
 df["Expiry_Date"] = pd.to_datetime(df["Expiry_Date"], errors="coerce")  # Convert to datetime, coerce errors to NaT
@@ -86,3 +86,13 @@ df["Amount_to_CreditLimit_Ratio"] = df["Transaction_Amount"] / df["Credit_Limit"
 # Customer spending behaivor (historical average & transaction count)
 cust_stat = df.groupby("Customer_ID")["Transaction_Amount"].agg(Customer_Avg_Amount = "mean", Customer_Txn_Count = "count").reset_index()
 df = df.merge(cust_stat, on="Customer_ID", how="left")
+
+# Merchant historical fraud rate( risk signal)
+merchant_fraud_rate = df.groupby("Merchant_ID")["Fraud_Flag"].mean().rename("Merchant_Fraud_Rate")
+df = df.merge(merchant_fraud_rate, on="Merchant_ID", how="left")
+
+#Quick check of the engineered features
+print(df[["Transaction_Hour", "Is_Weekend", "Is_Night_Transaction",
+          "Is_Card_Expired", "Customer_Tenure_Days", "Amount_to_CreditLimit_Ratio",
+          "Customer_Avg_Amount", "Merchant_Fraud_Rate"]].describe())
+print("\nMarital_Status values:", df["Marital_Status"].unique())
