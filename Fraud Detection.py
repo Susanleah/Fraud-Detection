@@ -68,3 +68,21 @@ df["Marital_Status"] = df["Marital_Status"].replace("Divorsed", "Divorced")  # F
 #Parse date/time columns 
 df["Transaction_Date"] = pd.to_datetime(df["Transaction_Date"], errors="coerce")  # Convert to datetime, coerce errors to NaT
 df["Transaction_hour"] = pd.to_datetime(df["Transaction_Date"] , format="%H:%M:%S", errors="coerce").dt.hour  # Extract hour from Transaction_Date
+df["Transaction_DayOfWeek"] = df["Transaction_Date"].dt.dayofweek  # Extract day of week from Transaction_Date
+df["Is_Weekend"] = df["Transaction_DayOfWeek"].isin([5, 6]).astype(int)  # Create binary feature for weekend transactions
+df["Is_Night_Transaction"] = df["Transaction_hour"].apply(lambda h: 1 if pd.notnull(h) and (h >=23 or h <=5) else 0)  # Create binary feature for night transactions
+
+#Card expiry check 
+df["Expiry_Date"] = pd.to_datetime(df["Expiry_Date"], errors="coerce")  # Convert to datetime, coerce errors to NaT
+df["Is_Card_Expired"] = (df["Transaction_Date"] > df["Expiry_Date"]).astype(int)  # Create binary feature for expired cards
+
+#Customer tenure at the time of transaction
+df ["Customer_Since"] = pd.to_datetime(df["Customer_Since"], errors="coerce")  # Convert to datetime, coerce errors to NaT
+df["Customer_Tenure_Days"] = (df["Transaction_Date"] - df["Customer_Since"]).dt.days  # Calculate customer tenure in days
+
+#Amount relative to credit limit
+df["Amount_to_CreditLimit_Ratio"] = df["Transaction_Amount"] / df["Credit_Limit"].replace(0, np.nan).fillna(0)  # Calculate ratio of transaction amount to credit limit
+
+# Customer spending behaivor (historical average & transaction count)
+cust_stat = df.groupby("Customer_ID")["Transaction_Amount"].agg(Customer_Avg_Amount = "mean", Customer_Txn_Count = "count").reset_index()
+df = df.merge(cust_stat, on="Customer_ID", how="left")
