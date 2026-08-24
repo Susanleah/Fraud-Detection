@@ -119,5 +119,19 @@ numeric_cols = X.select_dtypes(exclude="object").columns.tolist()
 print("\nCategorical columns:", categorical_cols)
 print("\nNumeric columns:", numeric_cols)
 
-X_encodeed = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
-print("\nEncoded shape:", X_encodeed.shape)
+X_encoded = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
+print("\nEncoded shape:", X_encoded.shape)
+
+X_train, X_test, Y_train, Y_test = train_test_split(
+    X_encoded, Y, test_size=0.2, random_state=42, stratify=Y
+)
+
+print("\nTrain shape:", X_train.shape, "| Test shape:", X_test.shape)
+print("Train fraud rate:", round(Y_train.mean(), 4))
+print("Test fraud rate:", round(Y_test.mean(), 4))
+
+X_train.to_csv("X_train.csv", index=False)
+X_test.to_csv("X_test.csv", index=False)
+Y_train.to_csv("Y_train.csv", index=False)
+Y_test.to_csv("Y_test.csv", index=False)
+print("\nSaved train/test splits.")
