@@ -110,3 +110,14 @@ drop_cols = [
     "Fraud_Reason", "Customer_City", "Merchant_City", "Merchant_Since",
 ]
 
+target = "Fraud_Flag"
+X = df.drop(columns=drop_cols + [target])
+Y = df[target]
+
+categorical_cols = X.select_dtypes(include="object").columns.tolist()
+numeric_cols = X.select_dtypes(exclude="object").columns.tolist()
+print("\nCategorical columns:", categorical_cols)
+print("\nNumeric columns:", numeric_cols)
+
+X_encodeed = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
+print("\nEncoded shape:", X_encodeed.shape)
