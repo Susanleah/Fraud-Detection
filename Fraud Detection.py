@@ -156,6 +156,17 @@ X_test_scaled = scaler.transform(X_test)
 
 results = {}
 
+# Model 1: Logistic Regression
+lr= LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)
+lr.fit(X_train_scaled, Y_train)
+Y_proba = lr.predict_proba(X_test_scaled)[:, 1]
+Y_pred = lr.predict(X_test_scaled)
+
+print("\nLogistic Regression:")
+print("ROC-AUC:", roc_auc_score(Y_test, Y_proba))
+print("PR-AUC:", average_precision_score(Y_test, Y_proba))
+print(classification_report(Y_test, Y_pred))
+results["Logistic Regression"] = average_precision_score(Y_test, Y_proba)
 
 
 
