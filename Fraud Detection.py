@@ -200,6 +200,20 @@ print("PR-AUC:", average_precision_score(Y_test, Y_proba))
 print(classification_report(Y_test, Y_pred))
 results["XGBOOST"] = average_precision_score(Y_test, Y_proba)
 
+#Pick the best model based on PR-AUC
+best_model_name = max(results, key=results.get)
+print(f"\nBest model: {best_model_name} (PR-AUC={results[best_model_name]:.4f})")
+
+#Save the best model and scaler for future use
+best_models = {"Logistic Regression": lr, "Random Forest": rf, "XGBOOST": xgb}
+joblib.dump(best_models[best_model_name], "best_model.pk1")
+joblib.dump(scaler, "scaler.pkl")  # only needed if best model is Logistic Regression
+print("Saved best model-> best_model.pk1")
+
+
+    
+
+
 
 
 
