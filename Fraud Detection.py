@@ -13,6 +13,15 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+# Modeling Libraries 
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, average_precision_score
+from xgboost import XGBClassifier
+import joblib
+
+
 # ==========================================================
 # STEP 1: Load raw data
 # ==========================================================
@@ -135,3 +144,29 @@ X_test.to_csv("X_test.csv", index=False)
 Y_train.to_csv("Y_train.csv", index=False)
 Y_test.to_csv("Y_test.csv", index=False)
 print("\nSaved train/test splits.")
+
+# ==========================================================
+# STEP 5: Train and compare models
+# ==========================================================
+
+#Logistic regression needs scaled features to converge proprerly and perform well 
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+results = {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
