@@ -123,6 +123,9 @@ target = "Fraud_Flag"
 X = df.drop(columns=drop_cols + [target])
 Y = df[target]
 
+print(X)
+print(Y)
+
 categorical_cols = X.select_dtypes(include="object").columns.tolist()
 numeric_cols = X.select_dtypes(exclude="object").columns.tolist()
 print("\nCategorical columns:", categorical_cols)
@@ -183,9 +186,19 @@ print(classification_report(Y_test, Y_pred))
 results["Random Forest"] = average_precision_score(Y_test, Y_proba)
 
 #Model 3 : XGBOOST
+scale_pos_weight = (Y_train == 0).sum() / (Y_train == 1).sum()
+xgb = XGBClassifier(n_estimators=500 , max_depth=6, learning_rate=0.1, 
+                    scale_pos_weight=scale_pos_weight, eval_metric="logloss", 
+                    random_state=42, n_jobs=-1)
+xgb.fit(X_train, Y_train)
+Y_proba = xgb.predict_proba(X_test)[:, 1]
+Y_pred = xgb.predict(X_test)
 
-
-
+print("\nXGBOOST:")
+print("ROC-AUC:", roc_auc_score(Y_test, Y_proba))
+print("PR-AUC:", average_precision_score(Y_test, Y_proba))
+print(classification_report(Y_test, Y_pred))
+results["XGBOOST"] = average_precision_score(Y_test, Y_proba)
 
 
 
