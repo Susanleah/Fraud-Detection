@@ -20,6 +20,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, average_precision_score
 from xgboost import XGBClassifier
 import joblib
+import json
 
 
 # ==========================================================
@@ -214,8 +215,29 @@ print("Saved best model-> best_model.pk1")
 # STEP 6: Confusion Matrix
 # ==========================================================
     
+model_results = []
+for name, proba in [("Logistic Regression", lr.predict_proba(X_test_scaled)[:, 1]),
+                     ("Random Forest", rf.predict_proba(X_test)[:, 1]),
+                     ("XGBoost", xgb.predict_proba(X_test)[:, 1])]:
+    pred = (proba >= 0.5).astype(int)
+    model_results.append({
+        "name": name,
+        "confusion_matrix": confusion_matrix(Y_test, pred).tolist(),
+        "ROC_AUC": roc_auc_score(Y_test, proba),
+        "PR_AUC": average_precision_score(Y_test, proba),
+    })
 
+best = max(model_results, key=lambda r: r["PR_AUC"])
+print(f"\nBest model: {best['name']}")
 
+best_models = {"Logistic Regression": lr, "Random Forest": rf, "XGBoost": xgb}
+joblib.dump(best_models[best["name"]]," best_model.pk1")
+joblib.dump(scaler, "scaler.pkl")  # only needed if best model is Logistic Regression
+
+with open("model_results.json", "w") as f:
+    json.dump({"results":model_results, "best_model": best["name"]}, f,indent=2)
+
+print("Saved best_model.pk1, scaler.pk1, model_results.json")
 
 
 
