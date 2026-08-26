@@ -150,94 +150,61 @@ Y_test.to_csv("Y_test.csv", index=False)
 print("\nSaved train/test splits.")
 
 # ==========================================================
-# STEP 5: Train and compare models
+# STEP 5: Train models, compare, and save best one
 # ==========================================================
 
-#Logistic regression needs scaled features to converge proprerly and perform well 
+# Logistic Regression needs scaled features to converge properly and perform well
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-results = {}
-
-# Model 1: Logistic Regression
-lr= LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)
+# Logistic Regression
+lr = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)
 lr.fit(X_train_scaled, Y_train)
-Y_proba = lr.predict_proba(X_test_scaled)[:, 1]
-Y_pred = lr.predict(X_test_scaled)
 
-print("\nLogistic Regression:")
-print("ROC-AUC:", roc_auc_score(Y_test, Y_proba))
-print("PR-AUC:", average_precision_score(Y_test, Y_proba))
-print(classification_report(Y_test, Y_pred))
-results["Logistic Regression"] = average_precision_score(Y_test, Y_proba)
-
-# Model 2: Random Forest
-
-rf = RandomForestClassifier(n_estimators=200, max_depth=12, class_weight="balanced", 
-                            random_state=42, n_jobs=-1)
+# Random Forest Classifier
+rf = RandomForestClassifier(n_estimators=200, max_depth=12, class_weight="balanced",
+                             random_state=42, n_jobs=-1)
 rf.fit(X_train, Y_train)
-Y_proba = rf.predict_proba(X_test)[:, 1]
-Y_pred = rf.predict(X_test)
 
-print("\nRandom Forest:")
-print("ROC-AUC:", roc_auc_score(Y_test, Y_proba))
-print("PR-AUC:", average_precision_score(Y_test, Y_proba))
-print(classification_report(Y_test, Y_pred))
-results["Random Forest"] = average_precision_score(Y_test, Y_proba)
+# XGBOOST
 
-#Model 3 : XGBOOST
 scale_pos_weight = (Y_train == 0).sum() / (Y_train == 1).sum()
-xgb = XGBClassifier(n_estimators=500 , max_depth=6, learning_rate=0.1, 
-                    scale_pos_weight=scale_pos_weight, eval_metric="logloss", 
-                    random_state=42, n_jobs=-1)
+xgb = XGBClassifier(n_estimators=500, max_depth=6, learning_rate=0.1,
+                     scale_pos_weight=scale_pos_weight, eval_metric="logloss",
+                     random_state=42, n_jobs=-1)
 xgb.fit(X_train, Y_train)
-Y_proba = xgb.predict_proba(X_test)[:, 1]
-Y_pred = xgb.predict(X_test)
 
-print("\nXGBOOST:")
-print("ROC-AUC:", roc_auc_score(Y_test, Y_proba))
-print("PR-AUC:", average_precision_score(Y_test, Y_proba))
-print(classification_report(Y_test, Y_pred))
-results["XGBOOST"] = average_precision_score(Y_test, Y_proba)
-
-#Pick the best model based on PR-AUC
-best_model_name = max(results, key=results.get)
-print(f"\nBest model: {best_model_name} (PR-AUC={results[best_model_name]:.4f})")
-
-#Save the best model and scaler for future use
-best_models = {"Logistic Regression": lr, "Random Forest": rf, "XGBOOST": xgb}
-joblib.dump(best_models[best_model_name], "best_model.pk1")
-joblib.dump(scaler, "scaler.pkl")  # only needed if best model is Logistic Regression
-print("Saved best model-> best_model.pk1")
-
-# ==========================================================
-# STEP 6: Confusion Matrix
-# ==========================================================
-    
+# Evaluate all 3 models
 model_results = []
 for name, proba in [("Logistic Regression", lr.predict_proba(X_test_scaled)[:, 1]),
                      ("Random Forest", rf.predict_proba(X_test)[:, 1]),
                      ("XGBoost", xgb.predict_proba(X_test)[:, 1])]:
     pred = (proba >= 0.5).astype(int)
+    print(f"\n{name}:")
+    print("ROC-AUC:", roc_auc_score(Y_test, proba))
+    print("PR-AUC:", average_precision_score(Y_test, proba))
+    print(classification_report(Y_test, pred))
     model_results.append({
         "name": name,
         "confusion_matrix": confusion_matrix(Y_test, pred).tolist(),
-        "ROC_AUC": roc_auc_score(Y_test, proba),
-        "PR_AUC": average_precision_score(Y_test, proba),
+        "roc_auc": roc_auc_score(Y_test, proba),
+        "pr_auc": average_precision_score(Y_test, proba),
     })
 
-best = max(model_results, key=lambda r: r["PR_AUC"])
-print(f"\nBest model: {best['name']}")
+# Pick best model by PR-AUC 
+best = max(model_results, key=lambda r: r["pr_auc"])
+print(f"\nBest model: {best['name']} (PR-AUC={best['pr_auc']:.4f})")
 
+# Save best model, scaler, and results 
 best_models = {"Logistic Regression": lr, "Random Forest": rf, "XGBoost": xgb}
-joblib.dump(best_models[best["name"]]," best_model.pk1")
-joblib.dump(scaler, "scaler.pkl")  # only needed if best model is Logistic Regression
+joblib.dump(best_models[best["name"]], "best_model.pkl")
+joblib.dump(scaler, "scaler.pkl")
 
 with open("model_results.json", "w") as f:
-    json.dump({"results":model_results, "best_model": best["name"]}, f,indent=2)
+    json.dump({"results": model_results, "best_model": best["name"]}, f, indent=2)
 
-print("Saved best_model.pk1, scaler.pk1, model_results.json")
+print("Saved best_model.pkl, scaler.pkl, model_results.json")
 
 
 
